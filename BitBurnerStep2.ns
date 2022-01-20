@@ -1,0 +1,96 @@
+/** @param {NS} ns **/
+export async function main(ns) {
+	var bdtarg = 'w0r1d_d43m0n'
+
+	ns.disableLog("scan");
+	ns.disableLog('getServerNumPortsRequired');
+	ns.disableLog('getServerRequiredHackingLevel');
+	var portcap = 0;
+	var crackers = ['BruteSSH.exe',
+		'FTPCrack.exe',
+		'relaySMTP.exe',
+		'HTTPWorm.exe',
+		'SQLInject.exe',];
+	var crackfunc = [ns.brutessh,
+		ns.ftpcrack,
+		ns.relaysmtp,
+		ns.httpworm,
+		ns.sqlinject]
+	for (var i = 0; i < crackers.length; ++i) {
+		var f = crackers[i];
+		if (ns.fileExists(f)) {
+			portcap += 1;
+		}
+	}
+
+	ns.purchaseTor();
+	if (portcap < crackers.length) {
+		for (var i = portcap; i < crackers.length; ++i) {
+			var f = crackers[i];
+			if (ns.purchaseProgram(f)) {
+				++portcap;
+				ns.tprint(portcap);
+			}
+		}
+	}
+	var otherprogs = [
+		'AutoLink.exe',
+		'DeepscanV1.exe',
+		'DeepscanV2.exe',]
+	for (var i = 0; i < otherprogs.length; ++i) {
+		var f = otherprogs[i];
+		if (ns.fileExists(f) == false) ns.purchaseProgram(f);
+	}
+
+	var allservs = ['home',];
+	var breadcrumbs = [['home',],];
+	// Array of all servers that we have found so far
+	ns.tprint("hunting for " + bdtarg);
+	for (var i = 0; i < allservs.length; ++i) {
+		var targ = allservs[i];
+		ns.tprint(targ);
+		// tprint('processing ' + targ);
+		if (targ == bdtarg) {
+			if ((ns.hasRootAccess(targ) == false) & (ns.getServerNumPortsRequired(targ) <= portcap)) {
+				for (var c = 0; c < portcap; ++c) {
+					await crackfunc[c](targ);
+				}
+				await ns.nuke(targ);
+
+				// navigate to the server using connect
+				var steps = breadcrumbs[i];
+				ns.tprint(steps);
+				if (ns.getServerRequiredHackingLevel(targ) < ns.getHackingLevel()) {
+					for (var j = 1; j < steps.length; ++j) {
+						var stp = steps[j];
+						await ns.connect(stp);
+					}
+					await ns.installBackdoor();
+					// Never walk back home
+
+				}
+				else {
+					ns.tprint('unable to hack. Needs hacking ' + ns.getServerRequiredHackingLevel(targ))
+				}
+			}
+			else {
+				ns.tprint('unable to nuke. Needs ' + ns.getServerNumPortsRequired(targ) + ' ports open')
+			}
+		}
+		var potential = ns.scan(targ);
+		for (var j = 0; j < potential.length; ++j) {
+			var pot = potential[j];
+			if (allservs.includes(pot) == false) {
+				allservs = allservs.concat(pot);
+				var brdcrmnxt = allservs.length - 1;
+				var trail = breadcrumbs[i];
+				// print(trail + ' before tampering')
+				var newtrail = trail.concat(pot);
+				// print(newtrail + ' to get to ' + pot);
+				breadcrumbs[brdcrmnxt] = newtrail;
+			}
+		}
+
+	}
+	ns.tprint("couldn't find " + bdtarg)
+}

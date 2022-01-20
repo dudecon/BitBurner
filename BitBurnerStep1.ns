@@ -1,0 +1,17 @@
+/** @param {NS} ns **/
+export async function main(ns) {
+    var group = 'Daedalus'
+    if (ns.getFactionRep(group) < 1) {
+        while (true) {
+            var invites = ns.checkFactionInvitations();
+            if (invites.includes(group)) {
+                ns.joinFaction(group);
+                break;
+            }
+            await ns.sleep(100);
+        }
+    }
+    await ns.sleep(1500);
+    ns.tprint(ns.purchaseAugmentation(group, 'The Red Pill'));
+    ns.installAugmentations();
+}
